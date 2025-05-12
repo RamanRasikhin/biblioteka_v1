@@ -3,42 +3,32 @@ package com.librarysystem;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.io.File; // Użyj File do sprawdzania istnienia i usuwania
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files; // Alternatywa dla usuwania
-import java.nio.file.Paths;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class AccessManagerTest {
 
-    private static final String TEST_USERS_FILE_PATH = "test_users.csv"; // Nazwa pliku testowego
+    private static final String TEST_USERS_FILE_PATH = "test_users.csv";
     private AccessManager accessManager;
 
     @BeforeEach
     void setUp() throws IOException {
-        // Krok 1: Zawsze usuwaj plik testowy przed każdym testem, aby zapewnić czysty stan
         File testFile = new File(TEST_USERS_FILE_PATH);
         if (testFile.exists()) {
             if (!testFile.delete()) {
                 System.err.println("Warning: Could not delete test users file: " + TEST_USERS_FILE_PATH);
             }
         }
-
-        // Krok 2: Utwórz nową instancję AccessManager, która będzie używać pliku testowego.
-        // To spowoduje, że AccessManager (jeśli plik nie istnieje) stworzy pustą mapę użytkowników
-        // lub wczyta pusty plik.
         accessManager = new AccessManager(TEST_USERS_FILE_PATH);
     }
 
     @AfterEach
     void tearDown() throws IOException {
-        // Krok 3: Posprzątaj po teście (opcjonalne, ale dobra praktyka)
         File testFile = new File(TEST_USERS_FILE_PATH);
         if (testFile.exists()) {
             testFile.delete();
         }
-        // Upewnij się, że accessManager nie trzyma już referencji (GC się tym zajmie)
         accessManager = null;
     }
 
@@ -66,9 +56,6 @@ class AccessManagerTest {
         System.out.println("Running testCreateUser_duplicateEmail...");
         Date expiry = new Date(2025, 12, 31);
         accessManager.createUser("Jane", "Doe", "jane.doe@example.com", "READER", "password123", 5, expiry);
-        // Ten użytkownik jest teraz w pamięci accessManager i w pliku TEST_USERS_FILE_PATH
-
-        // Próba utworzenia drugiego użytkownika z tym samym emailem
         assertThrows(IllegalArgumentException.class, () -> {
             accessManager.createUser("Janet", "Doe", "jane.doe@example.com", "LIBRARIAN", "securepass", 10, expiry);
         }, "Should throw IllegalArgumentException for duplicate email");
@@ -79,9 +66,8 @@ class AccessManagerTest {
     void testFindUserById() {
         System.out.println("Running testFindUserById...");
         Date expiry = new Date(2026, 1, 1);
-        // Najpierw utwórz użytkownika, aby mieć ID do wyszukania
         accessManager.createUser("Alice", "Smith", "alice@example.com", "LIBRARIAN", "alicepass", 10, expiry);
-        User createdUser = accessManager.login("alice@example.com", "alicepass"); // login aby pobrać użytkownika z ID
+        User createdUser = accessManager.login("alice@example.com", "alicepass");
         assertNotNull(createdUser, "Alice should be created and logged in");
 
         User foundUser = accessManager.findUserById(createdUser.getId());
@@ -96,15 +82,12 @@ class AccessManagerTest {
     @Test
     void testPersistence() throws IOException {
         System.out.println("Running testPersistence...");
-        // Krok 1: Stwórz użytkownika i zapisz (automatycznie przez createUser w `accessManager`)
         Date expiry1 = new Date(2025, 1, 1);
         accessManager.createUser("Test", "User1", "test1@example.com", "READER", "pass1", 3, expiry1);
         User originalUser = accessManager.login("test1@example.com", "pass1");
         assertNotNull(originalUser, "Original user should be created");
         int originalUser1Id = originalUser.getId();
 
-        // Krok 2: Stwórz nowy AccessManager, który wczyta dane z tego samego pliku testowego
-        // `accessManager` (stary) nadal ma dane w pamięci, ale `newAccessManager` wczyta z pliku.
         AccessManager newAccessManager = new AccessManager(TEST_USERS_FILE_PATH);
 
         User reloadedUser1 = newAccessManager.login("test1@example.com", "pass1");
@@ -134,7 +117,6 @@ class AccessManagerTest {
         User userAfterRemove = accessManager.login(emailToRemove, "password123");
         assertNull(userAfterRemove, "User should not be found after removal from current AccessManager");
 
-        // Sprawdź, czy plik został zaktualizowany przez wczytanie go do nowej instancji
         AccessManager freshManager = new AccessManager(TEST_USERS_FILE_PATH);
         User userAfterRemoveFromFile = freshManager.login(emailToRemove, "password123");
         assertNull(userAfterRemoveFromFile, "User should not be found in a new AccessManager instance after removal");

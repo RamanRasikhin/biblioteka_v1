@@ -30,12 +30,12 @@ class DateTest {
     @Test
     void testAddMonths() {
         Date date = new Date(2023, 10, 26);
-        Date newDate = date.addMonths(3); // addMonths zwraca nowy obiekt
+        Date newDate = date.addMonths(3);
         assertEquals(2024, newDate.getYear());
         assertEquals(1, newDate.getMonth());
-        assertEquals(26, newDate.getDay()); // Dzień powinien pozostać taki sam, jeśli to możliwe
+        assertEquals(26, newDate.getDay());
 
-        Date originalDateCheck = new Date(2023, 10, 26); // Sprawdź, czy oryginał nie został zmieniony
+        Date originalDateCheck = new Date(2023, 10, 26);
         assertEquals(originalDateCheck.getYear(), date.getYear());
         assertEquals(originalDateCheck.getMonth(), date.getMonth());
     }
@@ -82,7 +82,6 @@ class DateTest {
     void testGetCurrentDate() {
         Date currentDate = Date.getCurrentDate();
         assertNotNull(currentDate);
-        // Można by sprawdzić, czy rok jest w rozsądnym zakresie, np. >= 2023
         assertTrue(currentDate.getYear() >= 2023);
     }
 }

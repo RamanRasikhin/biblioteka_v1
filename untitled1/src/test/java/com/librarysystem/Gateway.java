@@ -3,21 +3,17 @@ package com.librarysystem;
 import java.util.ArrayList;
 import java.util.List;
 
-// Corresponds to UML Gateway
 public class Gateway {
-    private com.librarysystem.IPresent present; // Could be LookupArray
-    private com.librarysystem.IReadWrite readWrite; // Could be Storage
-    private com.librarysystem.Executor executor; // Handles core logic
+    private com.librarysystem.IPresent present;
+    private com.librarysystem.IReadWrite readWrite;
+    private com.librarysystem.Executor executor;
 
-    // Constructor from UML
     public Gateway(com.librarysystem.IPresent present, com.librarysystem.IReadWrite readWrite) {
         this.present = present;
         this.readWrite = readWrite;
-        // Executor needs IPresent and IReadWrite, so we can pass them through
         this.executor = new com.librarysystem.Executor(present, readWrite);
     }
 
-    // Methods from UML, often delegating to Executor or directly to Present/ReadWrite
     public void createReservation(com.librarysystem.Book book, com.librarysystem.User user, com.librarysystem.Date reservationDate) {
         executor.createReservation(book, user, reservationDate);
     }
@@ -34,11 +30,9 @@ public class Gateway {
         executor.addBook(book);
     }
 
-    public void removeBookById(int bookId) { // From C++ Pracownik logic, using ID
+    public void removeBookById(int bookId) {
         com.librarysystem.Book book = readWrite.findBookById(bookId);
         if (book != null) {
-            // Ensure book is not currently borrowed or reserved before actual removal
-            // For simplicity, direct removal via executor
             executor.removeBook(book.getTitle(), book.getAuthor());
         } else {
             System.out.println("Gateway: Book with ID " + bookId + " not found for removal.");
@@ -46,7 +40,6 @@ public class Gateway {
     }
 
     public List<com.librarysystem.Book> listAvailableBooks() {
-        // This would typically filter books from executor.listBooks() or present.getPresentableBooks()
         List<com.librarysystem.Book> allBooks = present.getPresentableBooks();
         List<com.librarysystem.Book> availableBooks = new ArrayList<>();
         for (com.librarysystem.Book book : allBooks) {
@@ -57,7 +50,7 @@ public class Gateway {
         return availableBooks;
     }
 
-    public List<com.librarysystem.Book> searchBooks(String searchTerm) { // Simplified search
+    public List<com.librarysystem.Book> searchBooks(String searchTerm) {
         List<com.librarysystem.Book> allBooks = present.getPresentableBooks();
         List<com.librarysystem.Book> foundBooks = new ArrayList<>();
         String lowerSearchTerm = searchTerm.toLowerCase();
@@ -76,12 +69,6 @@ public class Gateway {
         return readWrite.findBookById(id);
     }
 
-    // User management facade methods (delegating to AccessManager, which isn't directly in Gateway's UML fields)
-    // For this example, we'll assume AccessManager is accessible or these are handled differently.
-    // If strict to UML, Gateway wouldn't directly call AccessManager unless it had a reference.
-    // Let's assume Main class coordinates AccessManager and Gateway.
-
-    // Methods to interact with Executor for borrows/reservations lists
     public List<com.librarysystem.Borrow> getUserBorrows(com.librarysystem.User user) {
         List<com.librarysystem.Borrow> userBorrows = new ArrayList<>();
         for (com.librarysystem.Borrow b : executor.getBorrows()) {
@@ -106,9 +93,8 @@ public class Gateway {
         return executor.getReservations();
     }
 
-    public List<com.librarysystem.Borrow> getAllBorrows(com.librarysystem.Date currentDate) { // Add currentDate for overdue status
+    public List<com.librarysystem.Borrow> getAllBorrows(com.librarysystem.Date currentDate) {
         List<com.librarysystem.Borrow> borrows = executor.getBorrows();
-        // Optionally enrich with overdue status here if needed by UI directly
         return borrows;
     }
 }

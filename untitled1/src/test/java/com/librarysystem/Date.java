@@ -1,13 +1,11 @@
-// ============== File: com/librarysystem/Date.java ==============
 package com.librarysystem;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-// import java.time.temporal.ChronoUnit; // Not used in current version
 
 public class Date {
     private LocalDate localDate;
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE; // YYYY-MM-DD
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     public Date(int year, int month, int day) {
         this.localDate = LocalDate.of(year, month, day);
@@ -29,10 +27,9 @@ public class Date {
         return localDate.getYear();
     }
 
-    // CHANGED: Method now returns a new Date object
     public Date addMonths(int months) {
         LocalDate newLocalDate = this.localDate.plusMonths(months);
-        return new Date(newLocalDate); // Return a NEW Date instance
+        return new Date(newLocalDate);
     }
 
     @Override
@@ -49,26 +46,25 @@ public class Date {
     }
 
     public boolean isAfter(Date other) {
-        if (other == null || other.localDate == null) return false; // Guard against null
+        if (other == null || other.localDate == null) return false;
         return this.localDate.isAfter(other.localDate);
     }
 
     public boolean isBefore(Date other) {
-        if (other == null || other.localDate == null) return false; // Guard against null
+        if (other == null || other.localDate == null) return false;
         return this.localDate.isBefore(other.localDate);
     }
 
     public boolean isEqual(Date other) {
-        if (other == null || other.localDate == null) return false; // Guard against null
+        if (other == null || other.localDate == null) return false;
         return this.localDate.isEqual(other.localDate);
     }
 
     public boolean isSameDayOrAfter(Date other) {
-        if (other == null || other.localDate == null) return false; // Guard against null
+        if (other == null || other.localDate == null) return false;
         return !this.localDate.isBefore(other.localDate);
     }
 
-    // These also should return new Date objects for consistency
     public Date plusDays(long days) {
         return new Date(this.localDate.plusDays(days));
     }

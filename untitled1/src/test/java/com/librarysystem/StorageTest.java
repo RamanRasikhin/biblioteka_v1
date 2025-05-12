@@ -3,10 +3,8 @@ package com.librarysystem;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.io.File; // Użyj File
+import java.io.File;
 import java.io.IOException;
-// import java.nio.file.Files; // Alternatywa
-// import java.nio.file.Paths; // Alternatywa
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,7 +16,6 @@ class StorageTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        // Krok 1: Zawsze usuwaj plik testowy PRZED każdym testem
         File testFile = new File(TEST_BOOKS_FILE_PATH);
         if (testFile.exists()) {
             if (!testFile.delete()) {
@@ -27,7 +24,6 @@ class StorageTest {
         }
         System.out.println("StorageTest.setUp: Deleted old test file if existed: " + TEST_BOOKS_FILE_PATH);
 
-        // Krok 2: Utwórz nową instancję Storage, przekazując ścieżkę do pliku testowego
         storage = new Storage(TEST_BOOKS_FILE_PATH);
         System.out.println("StorageTest.setUp: New Storage instance created for: " + TEST_BOOKS_FILE_PATH);
     }
@@ -40,7 +36,7 @@ class StorageTest {
                 System.err.println("Warning: Could not delete test books file in tearDown: " + TEST_BOOKS_FILE_PATH);
             }
         }
-        storage = null; // Pomóż GC
+        storage = null;
         System.out.println("StorageTest.tearDown: Cleaned up test file and references for: " + TEST_BOOKS_FILE_PATH);
         System.out.println("-----------------------------------------------------");
     }
@@ -48,7 +44,7 @@ class StorageTest {
     @Test
     void testRegisterAndGetBook() {
         System.out.println("Running testRegisterAndGetBook...");
-        Book book1 = new Book("The Hobbit", "J.R.R. Tolkien", "Fantasy", "An adventure", "100"); // ID -1 jest domyślne
+        Book book1 = new Book("The Hobbit", "J.R.R. Tolkien", "Fantasy", "An adventure", "100");
         storage.registerBook(book1);
 
         assertNotEquals(-1, book1.getId(), "Book ID should be assigned upon registration");
@@ -62,7 +58,6 @@ class StorageTest {
     @Test
     void testGetAllBooks() {
         System.out.println("Running testGetAllBooks...");
-        // Na początku, po setUp i utworzeniu nowego Storage z czystym plikiem, lista powinna być pusta.
         assertTrue(storage.getAllBooks().isEmpty(), "Initially, book list should be empty.");
 
         storage.registerBook(new Book("Book A", "Author A", "Genre A", "Desc A", "ISBN_A"));
@@ -78,7 +73,7 @@ class StorageTest {
         System.out.println("Running testRemoveBook...");
         Book book = new Book("To Remove", "Author R", "Genre R", "Desc R", "ISBN_R");
         storage.registerBook(book);
-        int bookId = book.getId(); // Pobierz ID po rejestracji
+        int bookId = book.getId();
 
         assertNotNull(storage.findBookById(bookId), "Book should exist before removal.");
         assertEquals(1, storage.getAllBooks().size(), "Should be 1 book before removal.");
@@ -102,17 +97,15 @@ class StorageTest {
         assertTrue(currentBook.isAvailable(), "Book should be initially available.");
 
         storage.updateBookAvailability(bookId, false);
-        currentBook = storage.findBookById(bookId); // Pobierz ponownie po aktualizacji
+        currentBook = storage.findBookById(bookId);
         assertNotNull(currentBook);
         assertFalse(currentBook.isAvailable(), "Book should be unavailable after update.");
 
-        // Sprawdź trwałość - utwórz nową instancję Storage, która wczyta z tego samego pliku testowego
         Storage newStorage = new Storage(TEST_BOOKS_FILE_PATH);
         Book reloadedBook = newStorage.findBookById(bookId);
         assertNotNull(reloadedBook, "Book should be found in new Storage instance.");
         assertFalse(reloadedBook.isAvailable(), "Availability change should persist across instances.");
 
-        // Przywróć stan dla spójności (lub zostaw, @BeforeEach i tak wyczyści)
         storage.updateBookAvailability(bookId, true);
         currentBook = storage.findBookById(bookId);
         assertNotNull(currentBook);
@@ -127,16 +120,13 @@ class StorageTest {
         storage.registerBook(book1);
         int id1 = book1.getId();
 
-        // Poprawka konstruktora Book, aby pasował do istniejących
         Book book2 = new Book(-1, "Another One", "Author O", "Genre O", "Desc O", "ISBN_P2", false);
         storage.registerBook(book2);
         int id2 = book2.getId();
 
         assertEquals(2, storage.getAllBooks().size(), "Current storage should have 2 books before creating fresh one.");
 
-        // Utwórz nową instancję Storage, powinna wczytać dane z pliku TEST_BOOKS_FILE_PATH
         Storage freshStorage = new Storage(TEST_BOOKS_FILE_PATH);
-        // Logika w loadBooks powinna poprawnie wczytać 2 książki
         assertEquals(2, freshStorage.getAllBooks().size(), "Fresh storage should load 2 books from file.");
 
         Book reloadedBook1 = freshStorage.findBookById(id1);

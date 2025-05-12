@@ -1,21 +1,17 @@
-// ============== File: com/librarysystem/User.java (MODIFIED) ==============
 package com.librarysystem;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// Corresponds to UML User (and C++ Czytelnik)
 public class User implements com.librarysystem.INotify {
-    // Attributes from UML
     private String name;
     private String surname;
-    private String email; // Also acts as login
-    private String role; // e.g., "READER", "LIBRARIAN"
+    private String email;
+    private String role;
     private com.librarysystem.LibraryCard libraryCard;
     private String password;
     private List<String> notifications;
 
-    // Attributes from C++ Czytelnik
     private int id;
     private int bookLimit;
 
@@ -29,53 +25,41 @@ public class User implements com.librarysystem.INotify {
         this.password = password;
         this.notifications = new ArrayList<>();
         this.bookLimit = bookLimit > 0 ? bookLimit : 5;
-        // ZAWSZE twórz kartę biblioteczną
         this.libraryCard = new LibraryCard(id, cardExpiryDate);
     }
 
-    // Getters from UML
     public String getName() { return name; }
     public String getSurname() { return surname; }
     public String getEmail() { return email; }
     public String getRole() { return role; }
     public com.librarysystem.LibraryCard getLibraryCard() { return libraryCard; }
-    // getPassword for login check, handle securely
     public String getPassword() { return password; }
-    public List<String> getNotifications() { return new ArrayList<>(notifications); } // Return copy
+    public List<String> getNotifications() { return new ArrayList<>(notifications); }
 
-    // Setters (as implied by UML, or for modification)
     public void setName(String name) { this.name = name; }
     public void setSurname(String surname) { this.surname = surname; }
-    public void setEmail(String email) { this.email = email; } // Be careful if email is ID
+    public void setEmail(String email) { this.email = email; }
     public void setRole(String role) { this.role = role; }
-    public void setPassword(String password) { this.password = password; } // For password changes
+    public void setPassword(String password) { this.password = password; }
 
-    // From C++ Czytelnik
     public int getId() { return id; }
     public int getBookLimit() { return bookLimit; }
     public void setBookLimit(int bookLimit) { this.bookLimit = bookLimit; }
 
 
-    // Methods from UML
     public void accessSystem(Gateway gateway) {
-        // This implies the User object itself initiates interaction through a Gateway
-        // In a typical CLI/Web app, the main application loop would use the Gateway
         System.out.println(name + " is accessing the system via Gateway.");
-        // Example: gateway.displayAvailableBooks();
     }
 
-    public boolean login(String passwordAttempt) { // Simplified login
+    public boolean login(String passwordAttempt) {
         return this.password.equals(passwordAttempt);
     }
 
-    // INotify implementation
     @Override
     public void recieveMessage(String message) {
         this.notifications.add(message);
         System.out.println("Notification for " + name + ": " + message);
     }
-
-    // REMOVED getActiveBorrowsCount() - this logic is better in Executor
 
     @Override
     public String toString() {

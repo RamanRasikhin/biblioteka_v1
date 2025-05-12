@@ -20,7 +20,7 @@ class GatewayTest {
     private AccessManager testAccessManager;
 
     private User readerUser;
-    private Book book1; // Książka dodana w setUp
+    private Book book1;
     private Date simulatedTestCurrentDate;
 
     @BeforeEach
@@ -34,7 +34,7 @@ class GatewayTest {
         testStorage = new Storage(TEST_GW_BOOKS_FILE);
         testLookupArray = new LookupArray(testStorage);
         testAccessManager = new AccessManager(TEST_GW_USERS_FILE);
-        gateway = new Gateway(testLookupArray, testStorage); // Executor jest tworzony wewnątrz Gateway
+        gateway = new Gateway(testLookupArray, testStorage);
         System.out.println("GatewayTest.setUp: Initialized components.");
 
         simulatedTestCurrentDate = new Date(2025, 5, 10);
@@ -47,7 +47,7 @@ class GatewayTest {
         assertTrue(readerUser.getLibraryCard().isValid(simulatedTestCurrentDate), "ReaderUser's card should be valid at setup.");
 
         book1 = new Book("Gateway Test Book", "Author GW", "Genre GW", "Desc GW", "ISBN_GW1");
-        gateway.addBook(book1); // addBook w Executorze użyje readWrite.registerBook (nada ID) i present.registerBook
+        gateway.addBook(book1);
         assertNotEquals(-1, book1.getId(), "book1 should have an ID after adding via gateway.");
         System.out.println("GatewayTest.setUp: Created user and book1 (ID: " + book1.getId() + ").");
     }
@@ -67,9 +67,7 @@ class GatewayTest {
         assertNotNull(foundBookInStorage, "Book1 should be found in storage after adding via gateway.");
         assertEquals("Gateway Test Book", foundBookInStorage.getTitle());
 
-        // LookupArray.isPresent może wymagać odświeżenia, jeśli nie jest dynamiczny
-        // Dla uproszczenia zakładamy, że po addBook, LookupArray jest spójny
-        testLookupArray.refreshPresenceMap(); // Wymuś odświeżenie dla pewności
+        testLookupArray.refreshPresenceMap();
         assertTrue(testLookupArray.isPresent("Gateway Test Book", "Author GW"),
                 "Book1 should be present in LookupArray.");
         System.out.println("Finished testAddBookThroughGateway.");
@@ -78,7 +76,7 @@ class GatewayTest {
     @Test
     void testBorrowAndReturnBookThroughGateway() {
         System.out.println("Running testBorrowAndReturnBookThroughGateway...");
-        Book targetBook = testStorage.findBookById(book1.getId()); // Pobierz aktualny obiekt ze Storage
+        Book targetBook = testStorage.findBookById(book1.getId());
         assertNotNull(targetBook, "Target book (book1) should be found in storage.");
         assertTrue(targetBook.isAvailable(), "Target book should initially be available.");
         assertTrue(readerUser.getLibraryCard().isValid(simulatedTestCurrentDate), "Reader's card must be valid.");
@@ -86,14 +84,12 @@ class GatewayTest {
         Date borrowDate = simulatedTestCurrentDate;
         Date returnDate = borrowDate.addMonths(1);
 
-        // Wypożycz
         gateway.createBorrow(targetBook, readerUser, borrowDate, returnDate);
 
         Book borrowedBookState = testStorage.findBookById(targetBook.getId());
         assertNotNull(borrowedBookState, "Book should still exist in storage after borrow.");
         assertFalse(borrowedBookState.isAvailable(), "Book in storage should be unavailable after gateway borrow.");
 
-        // Sprawdzenie LookupArray - getPresentableBooks zwraca listę ze Storage
         Book bookInLookup = testLookupArray.getPresentableBooks().stream()
                 .filter(b -> b.getId() == targetBook.getId())
                 .findFirst().orElse(null);
@@ -101,7 +97,6 @@ class GatewayTest {
         assertFalse(bookInLookup.isAvailable(), "Book presented by LookupArray should reflect unavailability.");
 
 
-        // Zwróć
         gateway.returnBook(targetBook, readerUser);
 
         Book returnedBookState = testStorage.findBookById(targetBook.getId());
@@ -119,15 +114,13 @@ class GatewayTest {
     @Test
     void testListAvailableBooks() {
         System.out.println("Running testListAvailableBooks...");
-        // book1 (ID np. 1) został dodany w setUp i jest dostępny
 
         Book book2 = new Book("Unavailable Book", "Author UB", "Genre UB", "Desc UB", "ISBN_UB");
-        gateway.addBook(book2); // ID zostanie nadane (np. 2)
+        gateway.addBook(book2);
         assertNotEquals(-1, book2.getId());
-        Book book2FromStorage = testStorage.findBookById(book2.getId()); // Pobierz ze storage by mieć pewność ID
+        Book book2FromStorage = testStorage.findBookById(book2.getId());
         assertNotNull(book2FromStorage);
 
-        // Wypożycz drugą książkę, aby była niedostępna
         assertTrue(readerUser.getLibraryCard().isValid(simulatedTestCurrentDate), "Card must be valid to borrow book2");
         gateway.createBorrow(book2FromStorage, readerUser, simulatedTestCurrentDate, simulatedTestCurrentDate.addMonths(1));
 
@@ -144,13 +137,11 @@ class GatewayTest {
     @Test
     void testSearchBooks() {
         System.out.println("Running testSearchBooks...");
-        // book1 ("Gateway Test Book", "Author GW") jest już w systemie z setUp
-
         Book bookX = new Book("Specific Search Title", "Author X", "Genre XSpecific", "Desc X", "ISBN_X");
         gateway.addBook(bookX);
         assertNotEquals(-1, bookX.getId());
 
-        testLookupArray.refreshPresenceMap(); // Upewnij się, że LookupArray jest aktualny przed wyszukiwaniem
+        testLookupArray.refreshPresenceMap();
 
         List<Book> resultsTitle = gateway.searchBooks("Specific Search");
         assertEquals(1, resultsTitle.size(), "Search for 'Specific Search' should find 1 book.");
@@ -160,7 +151,7 @@ class GatewayTest {
         assertEquals(1, resultsAuthor.size(), "Search for 'Author GW' should find 1 book.");
         assertEquals(book1.getId(), resultsAuthor.get(0).getId());
 
-        List<Book> resultsGenre = gateway.searchBooks("XSpecific"); // Nazwa gatunku
+        List<Book> resultsGenre = gateway.searchBooks("XSpecific");
         assertEquals(1, resultsGenre.size(), "Search for 'XSpecific' should find 1 book.");
         assertEquals(bookX.getId(), resultsGenre.get(0).getId());
 

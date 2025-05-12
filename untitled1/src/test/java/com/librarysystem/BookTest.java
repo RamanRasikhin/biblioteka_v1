@@ -20,7 +20,7 @@ class BookTest {
     @Test
     void testBookCreationWithDefaultAvailability() {
         Book book = new Book("To Kill a Mockingbird", "Harper Lee", "Fiction", "A story of justice and racism", "0987654321");
-        assertEquals(-1, book.getId()); // Domyślne ID, jeśli nie podano
+        assertEquals(-1, book.getId());
         assertTrue(book.isAvailable());
         assertEquals("To Kill a Mockingbird", book.getTitle());
     }

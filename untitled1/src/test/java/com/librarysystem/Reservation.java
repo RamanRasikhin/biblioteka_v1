@@ -1,22 +1,20 @@
 package com.librarysystem;
 
-// Corresponds to UML Reservation
-public class Reservation implements IAction { // CHANGED: IPerform to IAction
+public class Reservation implements IAction {
     private Date reservationDate;
-    private String status; // e.g., "PENDING", "FULFILLED", "CANCELLED"
+    private String status;
     private Book book;
-    private INotify notifyTarget; // UML: notify: INotify (this would be the User)
-    private User user; // Convenience to access User object directly
+    private INotify notifyTarget;
+    private User user;
 
     public Reservation(Book book, Date reservationDate, String status, User user) {
         this.book = book;
         this.reservationDate = reservationDate;
         this.status = status;
         this.user = user;
-        this.notifyTarget = user; // User implements INotify
+        this.notifyTarget = user;
     }
 
-    // Getters from UML
     public Date getReservationDate() { return reservationDate; }
     public String getStatus() { return status; }
     public Book getBook() { return book; }
@@ -24,13 +22,10 @@ public class Reservation implements IAction { // CHANGED: IPerform to IAction
     public User getUser() { return user; }
 
 
-    // Setters
     public void setStatus(String status) {
         this.status = status;
-        // notifyTarget.recieveMessage("Reservation status for '" + book.getTitle() + "' updated to: " + status);
     }
 
-    // Method from UML (Visitor pattern)
     @Override
     public void accept(Executor executor) {
         executor.executeReservation(this);

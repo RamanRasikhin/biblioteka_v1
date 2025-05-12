@@ -1,4 +1,3 @@
-// ============== File: com/librarysystem/Main.java (MODIFIED) ==============
 package com.librarysystem;
 
 import java.util.List;
@@ -9,27 +8,25 @@ public class Main {
     private static Scanner scanner = new Scanner(System.in);
     private static com.librarysystem.AccessManager accessManager;
     private static com.librarysystem.Gateway gateway;
-    private static com.librarysystem.Storage storage; // Instance of Storage
-    private static com.librarysystem.LookupArray lookupArray; // Instance of LookupArray
+    private static com.librarysystem.Storage storage;
+    private static com.librarysystem.LookupArray lookupArray;
 
     private static com.librarysystem.User currentUser = null;
     private static com.librarysystem.Date simulatedCurrentDate;
 
 
     public static void main(String[] args) {
-        // Initialization
-        storage = new com.librarysystem.Storage(); // Implements IReadWrite
-        lookupArray = new com.librarysystem.LookupArray(storage); // Implements IPresent, uses IReadWrite
+        storage = new com.librarysystem.Storage();
+        lookupArray = new com.librarysystem.LookupArray(storage);
 
-        accessManager = new com.librarysystem.AccessManager(); // Manages users
-        gateway = new com.librarysystem.Gateway(lookupArray, storage); // Uses IPresent and IReadWrite
+        accessManager = new com.librarysystem.AccessManager();
+        gateway = new com.librarysystem.Gateway(lookupArray, storage);
 
-        simulatedCurrentDate = com.librarysystem.Date.getCurrentDate(); // Initialize simulated date
+        simulatedCurrentDate = com.librarysystem.Date.getCurrentDate();
 
         System.out.println("Library System Initialized. UML-based structure.");
         System.out.println("Simulated Date: " + simulatedCurrentDate.toString());
 
-        // Add a default admin/librarian if none exist for easier testing
         if (accessManager.findUserByEmail("admin@library.com") == null && accessManager.getAllUsers().isEmpty()) {
             try {
                 accessManager.createUser("Admin", "User", "admin@library.com", "LIBRARIAN", "admin123",
@@ -45,7 +42,7 @@ public class Main {
     }
 
     private static void mainMenu() {
-        int choice = 0; // Initialize choice
+        int choice = 0;
         do {
             System.out.println("\n--- LIBRARY MAIN MENU (Simulated Date: " + simulatedCurrentDate.toString() + ") ---");
             if (currentUser == null) {
@@ -105,7 +102,6 @@ public class Main {
         System.out.print("Enter email: "); String email = scanner.nextLine();
         System.out.print("Enter password: "); String password = scanner.nextLine();
         try {
-            // Default book limit for new readers: 5, card expiry: 12 months from simulatedCurrentDate
             accessManager.createUser(name, surname, email, "READER", password, 5, simulatedCurrentDate.addMonths(12));
             System.out.println("Reader registration successful. Please login.");
         } catch (IllegalArgumentException e) {
@@ -114,7 +110,7 @@ public class Main {
     }
 
     private static void logoutUser() {
-        if (currentUser != null) { // Add null check
+        if (currentUser != null) {
             System.out.println(currentUser.getName() + " logged out.");
             currentUser = null;
         } else {
@@ -139,19 +135,19 @@ public class Main {
             switch (choice) {
                 case 1:
                     System.out.print("Months to add: "); int addM = getIntInput();
-                    simulatedCurrentDate = simulatedCurrentDate.addMonths(addM); // MODIFIED
+                    simulatedCurrentDate = simulatedCurrentDate.addMonths(addM);
                     break;
                 case 2:
                     System.out.print("Months to subtract: "); int subM = getIntInput();
-                    simulatedCurrentDate = simulatedCurrentDate.addMonths(-subM); // MODIFIED
+                    simulatedCurrentDate = simulatedCurrentDate.addMonths(-subM);
                     break;
                 case 3:
                     System.out.print("Days to add: "); int addD = getIntInput();
-                    simulatedCurrentDate = simulatedCurrentDate.plusDays(addD); // ADDED
+                    simulatedCurrentDate = simulatedCurrentDate.plusDays(addD);
                     break;
                 case 4:
                     System.out.print("Days to subtract: "); int subD = getIntInput();
-                    simulatedCurrentDate = simulatedCurrentDate.minusDays(subD); // ADDED
+                    simulatedCurrentDate = simulatedCurrentDate.minusDays(subD);
                     break;
                 case 5:
                     simulatedCurrentDate = com.librarysystem.Date.getCurrentDate();
@@ -189,7 +185,7 @@ public class Main {
                     case 4: viewMyBorrows(); break;
                     case 5: viewMyReservations(); break;
                     case 6: searchBooks(); break;
-                    case 7: listAvailableBooks(); break; // ADDED option
+                    case 7: listAvailableBooks(); break;
                     case 8: viewMyNotifications(); break;
                     case 9: viewMyCard(); break;
                     case 10: break;
@@ -197,7 +193,6 @@ public class Main {
                 }
             } catch (Exception e) {
                 System.err.println("Error in Reader Menu: " + e.getMessage());
-                // e.printStackTrace(); // Uncomment for debugging
             }
         } while (choice != 10);
     }
@@ -239,9 +234,7 @@ public class Main {
             return;
         }
         try {
-            // Example: Borrow for 1 month from simulatedCurrentDate
             gateway.createBorrow(book, currentUser, simulatedCurrentDate, simulatedCurrentDate.addMonths(1));
-            // Success message is printed by Executor
         } catch (IllegalStateException | IllegalArgumentException e) {
             System.out.println("Could not borrow book: " + e.getMessage());
         }
@@ -250,14 +243,13 @@ public class Main {
     private static void returnBook() {
         System.out.print("Enter Book ID to return: ");
         int bookId = getIntInput();
-        com.librarysystem.Book book = gateway.findBookById(bookId); // Find the book instance
+        com.librarysystem.Book book = gateway.findBookById(bookId);
         if (book == null) {
             System.out.println("Book with ID " + bookId + " not found.");
             return;
         }
         try {
             gateway.returnBook(book, currentUser);
-            // Success message is printed by Executor
         } catch (IllegalStateException | IllegalArgumentException e) {
             System.out.println("Could not return book: " + e.getMessage());
         }
@@ -273,7 +265,6 @@ public class Main {
         }
         try {
             gateway.createReservation(book, currentUser, simulatedCurrentDate);
-            // Success message is printed by Executor (and notification sent)
         } catch (IllegalStateException | IllegalArgumentException e) {
             System.out.println("Could not reserve book: " + e.getMessage());
         }
@@ -315,8 +306,7 @@ public class Main {
         String term = scanner.nextLine();
         if (term.trim().isEmpty()) {
             System.out.println("Search term cannot be empty.");
-            // Optionally, list all books if term is empty, or just return
-            viewAllBooksLibrarian(); // Show all books if search term is empty
+            viewAllBooksLibrarian();
             return;
         }
         List<com.librarysystem.Book> books = gateway.searchBooks(term);
@@ -342,7 +332,6 @@ public class Main {
         for (String notification : notifications) {
             System.out.println("- " + notification);
         }
-        // MODIFIED: Clear notifications after viewing
         currentUser.clearNotifications();
         System.out.println("(Notifications cleared after viewing)");
     }
@@ -368,7 +357,7 @@ public class Main {
                     case 1: addBook(); break;
                     case 2: removeBook(); break;
                     case 3: viewAllBooksLibrarian(); break;
-                    case 4: searchBooks(); break; // Reuse search for librarian
+                    case 4: searchBooks(); break;
                     case 5: manageUsersMenu(); break;
                     case 6: viewAllBorrows(); break;
                     case 7: viewAllReservations(); break;
@@ -377,7 +366,6 @@ public class Main {
                 }
             } catch (Exception e) {
                 System.err.println("Librarian Menu Error: " + e.getMessage());
-                // e.printStackTrace(); // For debugging
             }
         } while (choice != 8);
     }
@@ -423,7 +411,6 @@ public class Main {
 
         try {
             accessManager.createUser(name, surname, email, role, password, limit, simulatedCurrentDate.addMonths(expiryMonths));
-            // Success message printed by AccessManager
         } catch (IllegalArgumentException e) {
             System.out.println("Failed to create user: " + e.getMessage());
         }
@@ -448,7 +435,7 @@ public class Main {
         int newLimit = getIntInput();
         if (newLimit <=0) { System.out.println("Limit must be a positive number."); return; }
         user.setBookLimit(newLimit);
-        accessManager.saveUsers(); // Persist change
+        accessManager.saveUsers();
         System.out.println("Book limit for " + user.getName() + " (ID: " + userId + ") updated to " + newLimit);
     }
 
@@ -461,7 +448,7 @@ public class Main {
         if (months <=0) { System.out.println("Months to extend must be a positive number."); return; }
         com.librarysystem.Date newExpiry = user.getLibraryCard().getExpiryDate().addMonths(months);
         user.getLibraryCard().setExpiryDate(newExpiry);
-        accessManager.saveUsers(); // Persist change
+        accessManager.saveUsers();
         System.out.println("Card expiry for " + user.getName() + " (ID: " + userId + ") extended to " + newExpiry);
     }
 
@@ -471,25 +458,23 @@ public class Main {
         if (user == null || user.getLibraryCard() == null) { System.out.println("User with ID " + userId + " or their card not found."); return; }
         boolean currentStatus = user.getLibraryCard().isBlocked();
         user.getLibraryCard().setBlocked(!currentStatus);
-        accessManager.saveUsers(); // Persist change
+        accessManager.saveUsers();
         System.out.println("Card for " + user.getName() + " (ID: " + userId + ") is now " + (!currentStatus ? "BLOCKED" : "UNBLOCKED"));
     }
 
     private static void removeUserByAdmin() {
         System.out.print("Enter email of user to remove: "); String email = scanner.nextLine();
-        com.librarysystem.User userToRemove = accessManager.findUserByEmail(email); // Use direct method if available, or adapt
+        com.librarysystem.User userToRemove = accessManager.findUserByEmail(email);
 
         if (userToRemove == null) {
             System.out.println("User with email " + email + " not found.");
             return;
         }
 
-        // Check active borrows for this user
         if (!gateway.getUserBorrows(userToRemove).isEmpty()) {
             System.out.println("Cannot remove user " + userToRemove.getName() + " (ID: " + userToRemove.getId() + "). They have active borrows.");
             return;
         }
-        // Check active (PENDING or READY_FOR_PICKUP) reservations
         boolean hasActiveReservations = gateway.getUserReservations(userToRemove).stream()
                 .anyMatch(r -> "PENDING".equals(r.getStatus()) || "READY_FOR_PICKUP".equals(r.getStatus()));
         if (hasActiveReservations) {
@@ -497,7 +482,7 @@ public class Main {
             return;
         }
 
-        accessManager.removeUser(email); // removeUser in AccessManager prints success/failure
+        accessManager.removeUser(email);
     }
 
 
@@ -508,10 +493,9 @@ public class Main {
         System.out.print("Enter description: "); String description = scanner.nextLine();
         System.out.print("Enter ISBN: "); String isbn = scanner.nextLine();
 
-        // ID will be auto-generated by Storage if -1 is passed
         com.librarysystem.Book newBook = new com.librarysystem.Book(-1, title, author, genre, description, isbn, true);
-        gateway.addBook(newBook); // Gateway delegates to Executor which uses IReadWrite and IPresent
-        System.out.println("Book '" + title + "' (ID: " + newBook.getId() + ") added to the system."); // Executor message might be duplicative
+        gateway.addBook(newBook);
+        System.out.println("Book '" + title + "' (ID: " + newBook.getId() + ") added to the system.");
     }
 
     private static void removeBook() {
@@ -523,15 +507,11 @@ public class Main {
             System.out.println("Book with ID " + bookId + " not found.");
             return;
         }
-        // The Executor's removeBook(title, author) method (called by gateway.removeBookById indirectly)
-        // already contains checks for active borrows and reservations.
-        // So, we can directly call gateway.removeBookById.
-        // The messages will be printed from Executor.
         gateway.removeBookById(bookId);
     }
 
     private static void viewAllBooksLibrarian() {
-        List<com.librarysystem.Book> books = storage.getAllBooks(); // Get all books directly from storage for librarian
+        List<com.librarysystem.Book> books = storage.getAllBooks();
         if (books.isEmpty()) {
             System.out.println("No books in the system.");
             return;
@@ -578,11 +558,11 @@ public class Main {
         while (true) {
             try {
                 int input = scanner.nextInt();
-                scanner.nextLine(); // Consume newline
+                scanner.nextLine();
                 return input;
             } catch (InputMismatchException e) {
                 System.out.print("Invalid input. Please enter a number: ");
-                scanner.nextLine(); // Consume invalid input
+                scanner.nextLine();
             }
         }
     }

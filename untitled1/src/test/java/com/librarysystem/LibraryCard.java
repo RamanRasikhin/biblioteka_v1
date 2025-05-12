@@ -3,26 +3,23 @@ package com.librarysystem;
 import java.util.ArrayList;
 import java.util.List;
 
-// Corresponds to UML LibraryCard
 public class LibraryCard {
-    private List<com.librarysystem.IAction> commands; // UML: commands: vector<Action>
-    private com.librarysystem.Date expiryDate; // From C++ KartaBiblioteczna
-    private boolean blocked;   // From C++ KartaBiblioteczna
-    private int cardId; // Associated with User or unique
+    private List<com.librarysystem.IAction> commands;
+    private com.librarysystem.Date expiryDate;
+    private boolean blocked;
+    private int cardId;
 
     public LibraryCard(int cardId, com.librarysystem.Date expiryDate) {
         this.cardId = cardId;
         this.commands = new ArrayList<>();
         this.expiryDate = expiryDate;
-        this.blocked = false; // Default not blocked
+        this.blocked = false;
     }
 
-    // Methods from UML
     public void addAction(com.librarysystem.IAction action) { // UML: add_action(perform: IPerform): void
         this.commands.add(action);
     }
 
-    // Adapting from C++ KartaBiblioteczna
     public boolean isValid(com.librarysystem.Date currentDate) {
         if (blocked) return false;
         return currentDate.isBefore(expiryDate) || currentDate.isEqual(expiryDate);
@@ -34,7 +31,7 @@ public class LibraryCard {
     public void setBlocked(boolean blocked) { this.blocked = blocked; }
     public int getCardId() { return cardId; }
 
-    public List<com.librarysystem.IAction> getCommands() { return new ArrayList<>(commands); } // Return copy
+    public List<com.librarysystem.IAction> getCommands() { return new ArrayList<>(commands); }
 
     public void addCommand(com.librarysystem.IAction command) { // Same as addAction, more direct name
         this.commands.add(command);

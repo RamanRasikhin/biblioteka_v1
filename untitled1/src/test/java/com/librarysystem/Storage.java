@@ -4,23 +4,22 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.*; // For file operations
+import java.io.*;
 
-// Corresponds to UML Storage, implements IReadWrite
 public class Storage implements com.librarysystem.IReadWrite {
-    private Map<Integer, com.librarysystem.Book> bookListMap; // UML: book_list_map: map (ID as key)
-    private String booksFilePath = "books.csv"; // For persistence
+    private Map<Integer, com.librarysystem.Book> bookListMap;
+    private String booksFilePath = "books.csv";
 
 
     public Storage() { this("books.csv"); }
     public Storage(String booksFilePath) {
         this.bookListMap = new HashMap<>();
-        this.booksFilePath = booksFilePath; // Użyj przekazanej ścieżki
-        loadBooks(); // Załaduj książki z tej ścieżki
+        this.booksFilePath = booksFilePath;
+        loadBooks();
     }
 
     @Override
-    public void removeBook(int bookId) { // Changed from (title, author) to ID to match UML better
+    public void removeBook(int bookId) {
         if (bookListMap.containsKey(bookId)) {
             bookListMap.remove(bookId);
             saveBooks();
@@ -32,7 +31,7 @@ public class Storage implements com.librarysystem.IReadWrite {
 
     @Override
     public void registerBook(com.librarysystem.Book book) {
-        if (book.getId() == -1) { // New book without pre-assigned ID
+        if (book.getId() == -1) {
             int newId = bookListMap.keySet().stream().mapToInt(k -> k).max().orElse(0) + 1;
             book.setId(newId);
         }
@@ -43,7 +42,7 @@ public class Storage implements com.librarysystem.IReadWrite {
 
     @Override
     public List<com.librarysystem.Book> getAllBooks() {
-        return new ArrayList<>(bookListMap.values()); // Return a copy
+        return new ArrayList<>(bookListMap.values());
     }
 
     @Override
@@ -56,11 +55,10 @@ public class Storage implements com.librarysystem.IReadWrite {
         com.librarysystem.Book book = bookListMap.get(bookId);
         if (book != null) {
             book.setAvailable(available);
-            saveBooks(); // Persist the change
+            saveBooks();
         }
     }
 
-    // Persistence (simplified CSV)
     private void loadBooks() {
         File file = new File(booksFilePath);
         if (!file.exists()) {
@@ -69,9 +67,9 @@ public class Storage implements com.librarysystem.IReadWrite {
         }
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
-            br.readLine(); // Skip header
+            br.readLine();
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split(";", -1); // -1 to keep empty trailing strings
+                String[] parts = line.split(";", -1);
                 if (parts.length >= 7) {
                     int id = Integer.parseInt(parts[0]);
                     String title = parts[1];
