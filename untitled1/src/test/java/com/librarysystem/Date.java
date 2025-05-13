@@ -11,7 +11,7 @@ public class Date {
         this.localDate = LocalDate.of(year, month, day);
     }
 
-    private Date(LocalDate localDate) { // Make this public if needed for cloning/conversion elsewhere
+    private Date(LocalDate localDate) {
         this.localDate = localDate;
     }
 
