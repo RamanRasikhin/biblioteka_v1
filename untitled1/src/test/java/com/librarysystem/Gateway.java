@@ -1,4 +1,3 @@
-// ============== File: com/librarysystem/Gateway.java (CLEANED) ==============
 package com.librarysystem;
 
 import java.util.ArrayList;
