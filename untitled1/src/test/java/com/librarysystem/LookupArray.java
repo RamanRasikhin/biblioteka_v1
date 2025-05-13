@@ -32,7 +32,7 @@ public class LookupArray implements IPresent {
 
     @Override
     public void registerBook(Book book) {
-        if (book != null && book.getTitle() != null && book.getAuthor() != null) { // Sprawdzenie nulli
+        if (book != null && book.getTitle() != null && book.getAuthor() != null) {
             presenceMap.put(generateKey(book.getTitle(), book.getAuthor()), book);
             System.out.println("LookupArray: Noted book '" + book.getTitle() + "'. Map size: " + presenceMap.size());
         }
