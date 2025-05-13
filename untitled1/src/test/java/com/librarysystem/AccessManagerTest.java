@@ -74,7 +74,7 @@ class AccessManagerTest {
         assertNotNull(foundUser, "Alice should be found by ID");
         assertEquals("Alice", foundUser.getName());
 
-        User notFoundUser = accessManager.findUserById(999); // Zakładając, że ID 999 nie istnieje
+        User notFoundUser = accessManager.findUserById(999); 
         assertNull(notFoundUser, "User with ID 999 should not be found");
         System.out.println("Finished testFindUserById.");
     }
@@ -112,7 +112,7 @@ class AccessManagerTest {
         User userBeforeRemove = accessManager.login(emailToRemove, "password123");
         assertNotNull(userBeforeRemove, "User to be removed should exist before removal");
 
-        accessManager.removeUser(emailToRemove); // Usuwa z pamięci i zapisuje plik
+        accessManager.removeUser(emailToRemove);
 
         User userAfterRemove = accessManager.login(emailToRemove, "password123");
         assertNull(userAfterRemove, "User should not be found after removal from current AccessManager");
