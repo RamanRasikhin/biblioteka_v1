@@ -16,7 +16,7 @@ public class LibraryCard {
         this.blocked = false;
     }
 
-    public void addAction(com.librarysystem.IAction action) { // UML: add_action(perform: IPerform): void
+    public void addAction(com.librarysystem.IAction action) {
         this.commands.add(action);
     }
 
@@ -33,7 +33,7 @@ public class LibraryCard {
 
     public List<com.librarysystem.IAction> getCommands() { return new ArrayList<>(commands); }
 
-    public void addCommand(com.librarysystem.IAction command) { // Same as addAction, more direct name
+    public void addCommand(com.librarysystem.IAction command) {
         this.commands.add(command);
     }
 }
