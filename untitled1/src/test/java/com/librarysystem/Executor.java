@@ -1,7 +1,9 @@
+// ============== File: com/librarysystem/Executor.java (CLEANED) ==============
 package com.librarysystem;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class Executor {
     private IPresent present;
@@ -38,8 +40,8 @@ public class Executor {
         if (!storedBook.isAvailable()) {
             throw new IllegalStateException("Book '" + storedBook.getTitle() + "' is not available for borrowing.");
         }
-        if (user.getLibraryCard() == null || !user.getLibraryCard().isValid(Date.getCurrentDate())) {
-            throw new IllegalStateException("User's library card is invalid or missing.");
+        if (user.getLibraryCard() == null || !user.getLibraryCard().isValid(borrowDate)) {
+            throw new IllegalStateException("User's library card is invalid or missing for the borrow date.");
         }
 
         int currentUserBorrows = countActiveBorrowsForUser(user);
@@ -60,6 +62,20 @@ public class Executor {
         user.getLibraryCard().addCommand(borrowAction);
         activeBorrows.add(borrowAction);
         System.out.println("Executor: Book '" + storedBook.getTitle() + "' borrowed by " + user.getName());
+
+        Reservation userReservationForThisBook = activeReservations.stream()
+                .filter(res -> res.getBook().getId() == storedBook.getId() &&
+                        res.getUser().getId() == user.getId() &&
+                        ("PENDING".equals(res.getStatus()) || "READY_FOR_PICKUP".equals(res.getStatus())))
+                .findFirst()
+                .orElse(null);
+
+        if (userReservationForThisBook != null) {
+            userReservationForThisBook.setStatus("FULFILLED");
+            user.recieveMessage("Your reservation for '" + storedBook.getTitle() + "' has been fulfilled by borrowing the book.");
+            System.out.println("Executor: Reservation for '" + storedBook.getTitle() + "' by " + user.getName() + " marked as FULFILLED.");
+        }
+
         return borrowAction;
     }
 
@@ -72,8 +88,22 @@ public class Executor {
             throw new IllegalStateException("Book '" + book.getTitle() + "' (ID: " + book.getId() + ") does not exist and cannot be reserved.");
         }
 
-        if (user.getLibraryCard() == null || !user.getLibraryCard().isValid(Date.getCurrentDate())) {
-            throw new IllegalStateException("User's library card is invalid or missing.");
+        if (user.getLibraryCard() == null || !user.getLibraryCard().isValid(reservationDate)) {
+            throw new IllegalStateException("User's library card is invalid or missing for the reservation date.");
+        }
+
+        boolean alreadyBorrowedByUser = activeBorrows.stream()
+                .anyMatch(b -> b.getBook().getId() == storedBook.getId() && b.getUser().getId() == user.getId());
+        if (alreadyBorrowedByUser) {
+            throw new IllegalStateException("User '" + user.getName() + "' has already borrowed this book ('" + storedBook.getTitle() + "'). Cannot reserve.");
+        }
+
+        boolean existingActiveReservation = activeReservations.stream()
+                .anyMatch(r -> r.getBook().getId() == storedBook.getId() &&
+                        r.getUser().getId() == user.getId() &&
+                        ("PENDING".equals(r.getStatus()) || "READY_FOR_PICKUP".equals(r.getStatus())));
+        if (existingActiveReservation) {
+            throw new IllegalStateException("User '" + user.getName() + "' already has an active reservation for this book ('" + storedBook.getTitle() + "').");
         }
 
         Reservation reservationAction = new Reservation(storedBook, reservationDate, "PENDING", user);
@@ -83,7 +113,6 @@ public class Executor {
         user.recieveMessage("Book '" + storedBook.getTitle() + "' has been reserved. Reservation date: " + reservationDate);
         return reservationAction;
     }
-
 
     public void addBook(com.librarysystem.Book book) {
         readWrite.registerBook(book);
@@ -98,7 +127,6 @@ public class Executor {
         if (storedBook == null) {
             throw new IllegalStateException("Book '" + book.getTitle() + "' (ID: " + book.getId() + ") not found in system for return.");
         }
-
 
         Borrow toRemove = null;
         for (Borrow borrow : activeBorrows) {
@@ -116,7 +144,6 @@ public class Executor {
             if (book.getId() == storedBook.getId() && book != storedBook) {
                 book.setAvailable(true);
             }
-
 
             present.registerBook(storedBook);
 
@@ -175,8 +202,22 @@ public class Executor {
         }
     }
 
-    public List<Reservation> getReservations() {
+    public List<Reservation> getAllReservations() {
         return new ArrayList<>(activeReservations);
+    }
+
+    public List<Reservation> getActiveUserReservations(User user) {
+        if (user == null) return new ArrayList<>();
+        return activeReservations.stream()
+                .filter(r -> r.getUser().getId() == user.getId() &&
+                        ("PENDING".equals(r.getStatus()) || "READY_FOR_PICKUP".equals(r.getStatus())))
+                .collect(Collectors.toList());
+    }
+
+    public List<Reservation> getAllActiveReservations() {
+        return activeReservations.stream()
+                .filter(r -> ("PENDING".equals(r.getStatus()) || "READY_FOR_PICKUP".equals(r.getStatus())))
+                .collect(Collectors.toList());
     }
 
     public List<Borrow> getBorrows() {
@@ -186,11 +227,37 @@ public class Executor {
     public List<Book> listBooks() {
         return readWrite.getAllBooks();
     }
+
     public void executeBorrow(Borrow borrow) {
         System.out.println("Executing borrow for: " + borrow.getBook().getTitle() + " by " + borrow.getUser().getName());
     }
 
     public void executeReservation(Reservation reservation) {
         System.out.println("Executing reservation for: " + reservation.getBook().getTitle() + " by " + reservation.getUser().getName());
+    }
+
+    public void checkAndNotifyForUpcomingReturns(Date currentDate, int daysInAdvance) {
+        if (currentDate == null) {
+            currentDate = Date.getCurrentDate();
+        }
+        Date notificationThresholdDate = currentDate.plusDays(daysInAdvance);
+
+        for (Borrow borrow : activeBorrows) {
+            if (borrow.isReminderSentForThisPeriod()) {
+                continue;
+            }
+
+            User user = borrow.getUser();
+            Book book = borrow.getBook();
+            Date returnDate = borrow.getReturnDate();
+
+            if (returnDate.isSameDayOrAfter(currentDate) && returnDate.isBefore(notificationThresholdDate.plusDays(1))) {
+                String message = "Reminder: The book '" + book.getTitle() +
+                        "' is due for return on " + returnDate.toString() + ".";
+                user.recieveMessage(message);
+                borrow.setReminderSentForThisPeriod(true);
+                System.out.println("Executor: Sent return reminder for '" + book.getTitle() + "' (due: " + returnDate + ") to " + user.getName());
+            }
+        }
     }
 }

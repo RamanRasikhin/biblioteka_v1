@@ -1,3 +1,4 @@
+// ============== File: com/librarysystem/Gateway.java (CLEANED) ==============
 package com.librarysystem;
 
 import java.util.ArrayList;
@@ -14,6 +15,10 @@ public class Gateway {
         this.executor = new com.librarysystem.Executor(present, readWrite);
     }
 
+    public Executor getExecutor() {
+        return this.executor;
+    }
+
     public void createReservation(com.librarysystem.Book book, com.librarysystem.User user, com.librarysystem.Date reservationDate) {
         executor.createReservation(book, user, reservationDate);
     }
@@ -26,7 +31,7 @@ public class Gateway {
         executor.returnBook(book, user);
     }
 
-    public void addBook(com.librarysystem.Book book) { // From C++ Pracownik logic
+    public void addBook(com.librarysystem.Book book) {
         executor.addBook(book);
     }
 
@@ -57,8 +62,8 @@ public class Gateway {
         for (com.librarysystem.Book book : allBooks) {
             if (book.getTitle().toLowerCase().contains(lowerSearchTerm) ||
                     book.getAuthor().toLowerCase().contains(lowerSearchTerm) ||
-                    book.getIsbn().toLowerCase().contains(lowerSearchTerm) ||
-                    book.getGenre().toLowerCase().contains(lowerSearchTerm)) {
+                    (book.getIsbn() != null && book.getIsbn().toLowerCase().contains(lowerSearchTerm)) ||
+                    (book.getGenre() != null && book.getGenre().toLowerCase().contains(lowerSearchTerm))) {
                 foundBooks.add(book);
             }
         }
@@ -71,6 +76,7 @@ public class Gateway {
 
     public List<com.librarysystem.Borrow> getUserBorrows(com.librarysystem.User user) {
         List<com.librarysystem.Borrow> userBorrows = new ArrayList<>();
+        if (user == null) return userBorrows;
         for (com.librarysystem.Borrow b : executor.getBorrows()) {
             if (b.getUser().getId() == user.getId()) {
                 userBorrows.add(b);
@@ -79,22 +85,19 @@ public class Gateway {
         return userBorrows;
     }
 
-    public List<com.librarysystem.Reservation> getUserReservations(com.librarysystem.User user) {
-        List<com.librarysystem.Reservation> userReservations = new ArrayList<>();
-        for (com.librarysystem.Reservation r : executor.getReservations()) {
-            if (r.getUser().getId() == user.getId()) {
-                userReservations.add(r);
-            }
-        }
-        return userReservations;
+    public List<com.librarysystem.Reservation> getUserActiveReservations(com.librarysystem.User user) {
+        return executor.getActiveUserReservations(user);
     }
 
-    public List<com.librarysystem.Reservation> getAllReservations() {
-        return executor.getReservations();
+    public List<com.librarysystem.Reservation> getAllActiveReservations() {
+        return executor.getAllActiveReservations();
+    }
+
+    public List<com.librarysystem.Reservation> getAllReservationsHistory() {
+        return executor.getAllReservations();
     }
 
     public List<com.librarysystem.Borrow> getAllBorrows(com.librarysystem.Date currentDate) {
-        List<com.librarysystem.Borrow> borrows = executor.getBorrows();
-        return borrows;
+        return executor.getBorrows();
     }
 }

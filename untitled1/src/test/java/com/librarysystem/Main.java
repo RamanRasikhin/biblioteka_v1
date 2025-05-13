@@ -1,3 +1,4 @@
+// ============== File: com/librarysystem/Main.java (CLEANED) ==============
 package com.librarysystem;
 
 import java.util.List;
@@ -13,15 +14,13 @@ public class Main {
 
     private static com.librarysystem.User currentUser = null;
     private static com.librarysystem.Date simulatedCurrentDate;
-
+    private static final int REMINDER_DAYS_IN_ADVANCE = 7;
 
     public static void main(String[] args) {
         storage = new com.librarysystem.Storage();
         lookupArray = new com.librarysystem.LookupArray(storage);
-
         accessManager = new com.librarysystem.AccessManager();
         gateway = new com.librarysystem.Gateway(lookupArray, storage);
-
         simulatedCurrentDate = com.librarysystem.Date.getCurrentDate();
 
         System.out.println("Library System Initialized. UML-based structure.");
@@ -30,12 +29,12 @@ public class Main {
         if (accessManager.findUserByEmail("admin@library.com") == null && accessManager.getAllUsers().isEmpty()) {
             try {
                 accessManager.createUser("Admin", "User", "admin@library.com", "LIBRARIAN", "admin123",
-                        10, com.librarysystem.Date.getCurrentDate().addMonths(24));
+                        10, simulatedCurrentDate.addMonths(24));
             } catch (IllegalArgumentException e) {
                 System.err.println("Could not create default admin: " + e.getMessage());
             }
         }
-
+        gateway.getExecutor().checkAndNotifyForUpcomingReturns(simulatedCurrentDate, REMINDER_DAYS_IN_ADVANCE);
 
         mainMenu();
         scanner.close();
@@ -44,6 +43,10 @@ public class Main {
     private static void mainMenu() {
         int choice = 0;
         do {
+            if (currentUser != null) {
+                gateway.getExecutor().checkAndNotifyForUpcomingReturns(simulatedCurrentDate, REMINDER_DAYS_IN_ADVANCE);
+            }
+
             System.out.println("\n--- LIBRARY MAIN MENU (Simulated Date: " + simulatedCurrentDate.toString() + ") ---");
             if (currentUser == null) {
                 System.out.println("1. Login");
@@ -91,30 +94,14 @@ public class Main {
         System.out.print("Enter password: ");
         String password = scanner.nextLine();
         currentUser = accessManager.login(email, password);
-        if (currentUser == null) {
-            System.out.println("Login failed. Please check credentials.");
-        }
-    }
-
-    private static void registerReader() {
-        System.out.print("Enter name: "); String name = scanner.nextLine();
-        System.out.print("Enter surname: "); String surname = scanner.nextLine();
-        System.out.print("Enter email: "); String email = scanner.nextLine();
-        System.out.print("Enter password: "); String password = scanner.nextLine();
-        try {
-            accessManager.createUser(name, surname, email, "READER", password, 5, simulatedCurrentDate.addMonths(12));
-            System.out.println("Reader registration successful. Please login.");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Registration failed: " + e.getMessage());
-        }
-    }
-
-    private static void logoutUser() {
         if (currentUser != null) {
-            System.out.println(currentUser.getName() + " logged out.");
-            currentUser = null;
+            System.out.println("Login successful for " + currentUser.getName());
+            gateway.getExecutor().checkAndNotifyForUpcomingReturns(simulatedCurrentDate, REMINDER_DAYS_IN_ADVANCE);
+            if(!currentUser.getNotifications().isEmpty()){
+                System.out.println("You have new notifications! Check them in the Reader Menu.");
+            }
         } else {
-            System.out.println("No user currently logged in.");
+            System.out.println("Login failed. Please check credentials.");
         }
     }
 
@@ -131,6 +118,8 @@ public class Main {
             System.out.println("6. Back to Main Menu");
             System.out.print("Enter choice: ");
             choice = getIntInput();
+
+            Date oldDate = simulatedCurrentDate;
 
             switch (choice) {
                 case 1:
@@ -156,19 +145,95 @@ public class Main {
                 default: System.out.println("Invalid choice.");
             }
             System.out.println("New Simulated Date: " + simulatedCurrentDate.toString());
+
+            if (!simulatedCurrentDate.isEqual(oldDate)) {
+                for (Borrow borrow : gateway.getExecutor().getBorrows()) {
+                    borrow.setReminderSentForThisPeriod(false);
+                }
+            }
+            gateway.getExecutor().checkAndNotifyForUpcomingReturns(simulatedCurrentDate, REMINDER_DAYS_IN_ADVANCE);
+
         } while (choice != 6);
     }
 
+    private static void viewMyReservations() {
+        List<com.librarysystem.Reservation> reservations = gateway.getUserActiveReservations(currentUser);
+        if (reservations.isEmpty()) {
+            System.out.println("You have no active reservations.");
+            return;
+        }
+        System.out.println("\n--- MY ACTIVE RESERVATIONS ---");
+        for (com.librarysystem.Reservation res : reservations) {
+            System.out.println("Title: " + res.getBook().getTitle() +
+                    ", Author: " + res.getBook().getAuthor() +
+                    ", Reserved On: " + res.getReservationDate() +
+                    ", Status: " + res.getStatus());
+        }
+    }
+
+    private static void viewAllReservations() {
+        int choice;
+        System.out.println("\n--- VIEW ALL RESERVATIONS (LIBRARIAN) ---");
+        System.out.println("1. View only active (PENDING, READY_FOR_PICKUP)");
+        System.out.println("2. View full history (including FULFILLED, CANCELLED)");
+        System.out.print("Enter choice: ");
+        choice = getIntInput();
+
+        List<com.librarysystem.Reservation> reservations;
+        if (choice == 1) {
+            reservations = gateway.getAllActiveReservations();
+            System.out.println("\n--- ALL ACTIVE RESERVATIONS ---");
+        } else if (choice == 2) {
+            reservations = gateway.getAllReservationsHistory();
+            System.out.println("\n--- FULL RESERVATION HISTORY ---");
+        } else {
+            System.out.println("Invalid choice. Returning to menu.");
+            return;
+        }
+
+        if (reservations.isEmpty()) {
+            System.out.println("No reservations found for the selected criteria.");
+            return;
+        }
+        for (com.librarysystem.Reservation r : reservations) {
+            System.out.println("Book: '" + r.getBook().getTitle() + "' (ID: " + r.getBook().getId() + ")" +
+                    ", User: " + r.getUser().getName() + " (ID: " + r.getUser().getId() + ")" +
+                    ", Reserved: " + r.getReservationDate() + ", Status: " + r.getStatus());
+        }
+    }
+
+    private static void registerReader() {
+        System.out.print("Enter name: "); String name = scanner.nextLine();
+        System.out.print("Enter surname: "); String surname = scanner.nextLine();
+        System.out.print("Enter email: "); String email = scanner.nextLine();
+        System.out.print("Enter password: "); String password = scanner.nextLine();
+        try {
+            accessManager.createUser(name, surname, email, "READER", password, 5, simulatedCurrentDate.addMonths(12));
+        } catch (IllegalArgumentException e) {
+            System.out.println("Registration failed: " + e.getMessage());
+        }
+    }
+
+    private static void logoutUser() {
+        if (currentUser != null) {
+            System.out.println(currentUser.getName() + " logged out.");
+            currentUser = null;
+        } else {
+            System.out.println("No user currently logged in.");
+        }
+    }
 
     private static void readerMenu() {
         int choice;
         do {
+            gateway.getExecutor().checkAndNotifyForUpcomingReturns(simulatedCurrentDate, REMINDER_DAYS_IN_ADVANCE);
+
             System.out.println("\n--- READER MENU (" + currentUser.getName() + ") ---");
             System.out.println("1. Borrow Book");
             System.out.println("2. Return Book");
             System.out.println("3. Reserve Book");
             System.out.println("4. View My Borrows");
-            System.out.println("5. View My Reservations");
+            System.out.println("5. View My Active Reservations");
             System.out.println("6. Search Books");
             System.out.println("7. List Available Books");
             System.out.println("8. View My Notifications");
@@ -209,7 +274,6 @@ public class Main {
                     ", Author: " + book.getAuthor() + ", Genre: " + book.getGenre());
         }
     }
-
 
     private static void viewMyCard() {
         com.librarysystem.LibraryCard card = currentUser.getLibraryCard();
@@ -282,30 +346,17 @@ public class Main {
                     ", Author: " + borrow.getBook().getAuthor() +
                     ", Borrowed On: " + borrow.getBorrowDate() +
                     ", Return By: " + borrow.getReturnDate() +
-                    (borrow.isOverdue(simulatedCurrentDate) ? " (OVERDUE)" : ""));
-        }
-    }
-
-    private static void viewMyReservations() {
-        List<com.librarysystem.Reservation> reservations = gateway.getUserReservations(currentUser);
-        if (reservations.isEmpty()) {
-            System.out.println("You have no reservations.");
-            return;
-        }
-        System.out.println("\n--- MY RESERVATIONS ---");
-        for (com.librarysystem.Reservation res : reservations) {
-            System.out.println("Title: " + res.getBook().getTitle() +
-                    ", Author: " + res.getBook().getAuthor() +
-                    ", Reserved On: " + res.getReservationDate() +
-                    ", Status: " + res.getStatus());
+                    (borrow.isOverdue(simulatedCurrentDate) ? " (OVERDUE)" : "") +
+                    (borrow.isReminderSentForThisPeriod() ? " (Reminder Sent)" : "")
+            );
         }
     }
 
     private static void searchBooks() {
-        System.out.print("Enter search term (title, author, ISBN, genre): ");
+        System.out.print("Enter search term (title, author, ISBN, genre) or leave empty to list all: ");
         String term = scanner.nextLine();
         if (term.trim().isEmpty()) {
-            System.out.println("Search term cannot be empty.");
+            System.out.println("Listing all books:");
             viewAllBooksLibrarian();
             return;
         }
@@ -336,10 +387,11 @@ public class Main {
         System.out.println("(Notifications cleared after viewing)");
     }
 
-
     private static void librarianMenu() {
         int choice;
         do {
+            gateway.getExecutor().checkAndNotifyForUpcomingReturns(simulatedCurrentDate, REMINDER_DAYS_IN_ADVANCE);
+
             System.out.println("\n--- LIBRARIAN MENU (" + currentUser.getName() + ") ---");
             System.out.println("1. Add Book");
             System.out.println("2. Remove Book");
@@ -347,7 +399,7 @@ public class Main {
             System.out.println("4. Search Books");
             System.out.println("5. Manage Users");
             System.out.println("6. View All Borrows");
-            System.out.println("7. View All Reservations");
+            System.out.println("7. View All Reservations (Active/History)");
             System.out.println("8. Back to Main Menu");
             System.out.print("Enter choice: ");
             choice = getIntInput();
@@ -475,16 +527,14 @@ public class Main {
             System.out.println("Cannot remove user " + userToRemove.getName() + " (ID: " + userToRemove.getId() + "). They have active borrows.");
             return;
         }
-        boolean hasActiveReservations = gateway.getUserReservations(userToRemove).stream()
+        boolean hasActiveReservations = gateway.getUserActiveReservations(userToRemove).stream()
                 .anyMatch(r -> "PENDING".equals(r.getStatus()) || "READY_FOR_PICKUP".equals(r.getStatus()));
         if (hasActiveReservations) {
             System.out.println("Cannot remove user " + userToRemove.getName() + " (ID: " + userToRemove.getId() + "). They have active reservations.");
             return;
         }
-
         accessManager.removeUser(email);
     }
-
 
     private static void addBook() {
         System.out.print("Enter title: "); String title = scanner.nextLine();
@@ -495,18 +545,11 @@ public class Main {
 
         com.librarysystem.Book newBook = new com.librarysystem.Book(-1, title, author, genre, description, isbn, true);
         gateway.addBook(newBook);
-        System.out.println("Book '" + title + "' (ID: " + newBook.getId() + ") added to the system.");
     }
 
     private static void removeBook() {
         System.out.print("Enter ID of book to remove: ");
         int bookId = getIntInput();
-
-        com.librarysystem.Book book = gateway.findBookById(bookId);
-        if (book == null) {
-            System.out.println("Book with ID " + bookId + " not found.");
-            return;
-        }
         gateway.removeBookById(bookId);
     }
 
@@ -535,24 +578,10 @@ public class Main {
             System.out.println("Book: '" + b.getBook().getTitle() + "' (ID: " + b.getBook().getId() + ")" +
                     ", User: " + b.getUser().getName() + " (ID: " + b.getUser().getId() + ")" +
                     ", Borrowed: " + b.getBorrowDate() + ", Due: " + b.getReturnDate() +
-                    (b.isOverdue(simulatedCurrentDate) ? " (OVERDUE)" : ""));
+                    (b.isOverdue(simulatedCurrentDate) ? " (OVERDUE)" : "") +
+                    (b.isReminderSentForThisPeriod() ? " (Reminder Sent)" : ""));
         }
     }
-
-    private static void viewAllReservations() {
-        List<com.librarysystem.Reservation> reservations = gateway.getAllReservations();
-        if (reservations.isEmpty()) {
-            System.out.println("No active reservations in the system.");
-            return;
-        }
-        System.out.println("\n--- ALL ACTIVE RESERVATIONS ---");
-        for (com.librarysystem.Reservation r : reservations) {
-            System.out.println("Book: '" + r.getBook().getTitle() + "' (ID: " + r.getBook().getId() + ")" +
-                    ", User: " + r.getUser().getName() + " (ID: " + r.getUser().getId() + ")" +
-                    ", Reserved: " + r.getReservationDate() + ", Status: " + r.getStatus());
-        }
-    }
-
 
     private static int getIntInput() {
         while (true) {

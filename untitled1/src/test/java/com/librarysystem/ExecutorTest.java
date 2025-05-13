@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
+// Dodaj import dla assertDoesNotThrow, jeśli nie ma
 import static org.junit.jupiter.api.Assertions.*;
 
 class ExecutorTest {
@@ -84,17 +85,26 @@ class ExecutorTest {
     @Test
     void testCreateBorrow_success() {
         System.out.println("Running testCreateBorrow_success...");
-        assertTrue(testStorage.findBookById(testBook1.getId()).isAvailable(), "Book1 should be available in storage initially.");
+        // Upewnij się, że książka jest w storage, jeśli setUp tego nie gwarantuje dla każdej metody
+        // testStorage.registerBook(testBook1); // Jeśli potrzebne, odkomentuj
+        Book bookFromStorage = testStorage.findBookById(testBook1.getId());
+        assertNotNull(bookFromStorage, "Book1 must exist in storage for this test.");
+        assertTrue(bookFromStorage.isAvailable(), "Book1 should be available in storage initially.");
+
         assertTrue(testUser.getLibraryCard().isValid(simulatedTestCurrentDate), "TestUser's card must be valid for this test.");
 
-        Date borrowDate = simulatedTestCurrentDate; // Użyj symulowanej daty
+        Date borrowDate = simulatedTestCurrentDate;
         Date returnDate = borrowDate.addMonths(1);
 
-        IAction borrowAction = executor.createBorrow(testBook1, testUser, borrowDate, returnDate);
+        IAction borrowAction = executor.createBorrow(bookFromStorage, testUser, borrowDate, returnDate); // Użyj bookFromStorage
 
         assertNotNull(borrowAction, "Borrow action should not be null.");
         assertTrue(borrowAction instanceof Borrow, "Action should be an instance of Borrow.");
-        assertFalse(testStorage.findBookById(testBook1.getId()).isAvailable(), "Book1 should be unavailable in storage after borrowing.");
+
+        Book bookAfterBorrow = testStorage.findBookById(testBook1.getId()); // Pobierz ponownie stan ze storage
+        assertNotNull(bookAfterBorrow, "Book1 should still exist in storage.");
+        assertFalse(bookAfterBorrow.isAvailable(), "Book1 should be unavailable in storage after borrowing.");
+
         assertEquals(1, executor.getBorrows().size(), "There should be one borrow recorded in executor.");
         assertEquals(testBook1.getId(), executor.getBorrows().get(0).getBook().getId(), "The borrowed book ID should match.");
         System.out.println("Finished testCreateBorrow_success.");
@@ -103,19 +113,19 @@ class ExecutorTest {
     @Test
     void testCreateBorrow_bookNotAvailable() {
         System.out.println("Running testCreateBorrow_bookNotAvailable...");
-        testStorage.registerBook(testBook1);
+        // Upewnij się, że książka jest w storage przed ustawieniem jej jako niedostępnej
+        // testStorage.registerBook(testBook1); // Jeśli potrzebne, odkomentuj
         testStorage.updateBookAvailability(testBook1.getId(), false);
 
         Book bookFromStorage = testStorage.findBookById(testBook1.getId());
         assertNotNull(bookFromStorage, "Book1 must exist in storage for this test.");
         assertFalse(bookFromStorage.isAvailable(), "Book1 must be set to unavailable for this test.");
 
-
         Date borrowDate = simulatedTestCurrentDate;
         Date returnDate = borrowDate.addMonths(1);
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            executor.createBorrow(bookFromStorage, testUser, borrowDate, returnDate);
+            executor.createBorrow(bookFromStorage, testUser, borrowDate, returnDate); // Użyj bookFromStorage
         });
         assertEquals("Book '" + bookFromStorage.getTitle() + "' is not available for borrowing.", exception.getMessage());
         System.out.println("Finished testCreateBorrow_bookNotAvailable.");
@@ -139,18 +149,26 @@ class ExecutorTest {
     void testCreateBorrow_limitReached() {
         System.out.println("Running testCreateBorrow_limitReached...");
         testUser.setBookLimit(1);
-        assertTrue(testStorage.findBookById(testBook1.getId()).isAvailable(), "Book1 should be available.");
-        assertTrue(testStorage.findBookById(testBook2.getId()).isAvailable(), "Book2 should be available.");
+        // Upewnij się, że książki są w storage
+        // testStorage.registerBook(testBook1);
+        // testStorage.registerBook(testBook2);
+
+        Book book1FromStorage = testStorage.findBookById(testBook1.getId());
+        Book book2FromStorage = testStorage.findBookById(testBook2.getId());
+        assertNotNull(book1FromStorage);
+        assertNotNull(book2FromStorage);
+
+        assertTrue(book1FromStorage.isAvailable(), "Book1 should be available.");
+        assertTrue(book2FromStorage.isAvailable(), "Book2 should be available.");
 
         Date borrowDate = simulatedTestCurrentDate;
         Date returnDate = borrowDate.addMonths(1);
 
-        assertDoesNotThrow(() -> executor.createBorrow(testBook1, testUser, borrowDate, returnDate));
+        assertDoesNotThrow(() -> executor.createBorrow(book1FromStorage, testUser, borrowDate, returnDate)); // Użyj book1FromStorage
         assertEquals(1, executor.countActiveBorrowsForUser(testUser), "User should have 1 borrow.");
 
-
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            executor.createBorrow(testBook2, testUser, borrowDate, returnDate);
+            executor.createBorrow(book2FromStorage, testUser, borrowDate, returnDate); // Użyj book2FromStorage
         });
         assertEquals("User has reached the book borrowing limit (1). Currently has 1 active borrows.", exception.getMessage());
         System.out.println("Finished testCreateBorrow_limitReached.");
@@ -161,13 +179,18 @@ class ExecutorTest {
         System.out.println("Running testCreateBorrow_invalidCard_blocked...");
         testUser.getLibraryCard().setBlocked(true);
         assertTrue(testUser.getLibraryCard().isBlocked(), "TestUser's card must be blocked for this test.");
+
+        // testStorage.registerBook(testBook1); // Jeśli potrzebne
+        Book bookFromStorage = testStorage.findBookById(testBook1.getId());
+        assertNotNull(bookFromStorage);
+
         Date borrowDate = simulatedTestCurrentDate;
         Date returnDate = borrowDate.addMonths(1);
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            executor.createBorrow(testBook1, testUser, borrowDate, returnDate);
+            executor.createBorrow(bookFromStorage, testUser, borrowDate, returnDate); // Użyj bookFromStorage
         });
-        assertEquals("User's library card is invalid or missing.", exception.getMessage());
+        assertEquals("User's library card is invalid or missing for the borrow date.", exception.getMessage()); // Zaktualizowany komunikat
         testUser.getLibraryCard().setBlocked(false);
         System.out.println("Finished testCreateBorrow_invalidCard_blocked.");
     }
@@ -179,13 +202,17 @@ class ExecutorTest {
         testUser.getLibraryCard().setExpiryDate(expiredDate);
         assertFalse(testUser.getLibraryCard().isValid(simulatedTestCurrentDate), "Card should be expired for this test.");
 
+        // testStorage.registerBook(testBook1); // Jeśli potrzebne
+        Book bookFromStorage = testStorage.findBookById(testBook1.getId());
+        assertNotNull(bookFromStorage);
+
         Date borrowDate = simulatedTestCurrentDate;
         Date returnDate = borrowDate.addMonths(1);
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            executor.createBorrow(testBook1, testUser, borrowDate, returnDate);
+            executor.createBorrow(bookFromStorage, testUser, borrowDate, returnDate); // Użyj bookFromStorage
         });
-        assertEquals("User's library card is invalid or missing.", exception.getMessage());
+        assertEquals("User's library card is invalid or missing for the borrow date.", exception.getMessage()); // Zaktualizowany komunikat
         System.out.println("Finished testCreateBorrow_invalidCard_expired.");
     }
 
@@ -193,19 +220,26 @@ class ExecutorTest {
     @Test
     void testCreateReservationAndReturnBook_triggersNotification() {
         System.out.println("Running testCreateReservationAndReturnBook_triggersNotification...");
+        // testStorage.registerBook(testBook1); // Jeśli potrzebne
         Book bookToBorrowAndReserve = testStorage.findBookById(testBook1.getId());
         assertNotNull(bookToBorrowAndReserve);
         assertTrue(bookToBorrowAndReserve.isAvailable(), "Book1 should be initially available in storage.");
         assertTrue(otherUser.getLibraryCard().isValid(simulatedTestCurrentDate), "OtherUser's card must be valid.");
 
         executor.createBorrow(bookToBorrowAndReserve, otherUser, simulatedTestCurrentDate, simulatedTestCurrentDate.addMonths(1));
-        assertFalse(testStorage.findBookById(bookToBorrowAndReserve.getId()).isAvailable(), "Book1 should be unavailable after otherUser borrows it.");
+
+        Book bookAfterBorrow = testStorage.findBookById(bookToBorrowAndReserve.getId());
+        assertNotNull(bookAfterBorrow);
+        assertFalse(bookAfterBorrow.isAvailable(), "Book1 should be unavailable after otherUser borrows it.");
 
         assertTrue(testUser.getLibraryCard().isValid(simulatedTestCurrentDate), "TestUser's card must be valid for reservation.");
         IAction reservationAction = executor.createReservation(bookToBorrowAndReserve, testUser, simulatedTestCurrentDate);
         assertNotNull(reservationAction, "Reservation action should not be null.");
         assertTrue(reservationAction instanceof Reservation, "Action should be Reservation.");
-        assertEquals(1, executor.getReservations().size(), "Should be one reservation.");
+
+        // POPRAWKA: Użyj getActiveUserReservations lub getAllActiveReservations
+        assertEquals(1, executor.getActiveUserReservations(testUser).size(), "TestUser should have one active reservation.");
+
         Reservation userReservation = (Reservation) reservationAction;
         assertEquals("PENDING", userReservation.getStatus(), "Reservation status should be PENDING.");
         assertTrue(testUser.getNotifications().stream().anyMatch(n -> n.contains("has been reserved")), "TestUser should get reservation confirmation.");
@@ -215,13 +249,19 @@ class ExecutorTest {
         }
 
         executor.returnBook(bookToBorrowAndReserve, otherUser);
-        assertTrue(testStorage.findBookById(bookToBorrowAndReserve.getId()).isAvailable(), "Book1 should be available in storage after otherUser returns it.");
 
-        Reservation updatedReservation = executor.getReservations().stream()
-                .filter(r -> r.getBook().getId() == bookToBorrowAndReserve.getId() && r.getUser().getId() == testUser.getId())
+        Book bookAfterReturn = testStorage.findBookById(bookToBorrowAndReserve.getId());
+        assertNotNull(bookAfterReturn);
+        assertTrue(bookAfterReturn.isAvailable(), "Book1 should be available in storage after otherUser returns it.");
+
+        // POPRAWKA: Użyj getAllReservations() i filtruj po statusie
+        Reservation updatedReservation = executor.getAllReservations().stream()
+                .filter(r -> r.getBook().getId() == bookToBorrowAndReserve.getId() &&
+                        r.getUser().getId() == testUser.getId() &&
+                        "READY_FOR_PICKUP".equals(r.getStatus())) // Dodatkowy filtr na status
                 .findFirst().orElse(null);
-        assertNotNull(updatedReservation, "TestUser's reservation should still exist.");
-        assertEquals("READY_FOR_PICKUP", updatedReservation.getStatus(), "Reservation status should be READY_FOR_PICKUP.");
+        assertNotNull(updatedReservation, "TestUser's reservation should exist and be READY_FOR_PICKUP.");
+        // assertEquals("READY_FOR_PICKUP", updatedReservation.getStatus()); // Już sprawdzone powyższym filtrem
 
         boolean notificationFound = testUser.getNotifications().stream()
                 .anyMatch(n -> n.contains("you reserved is now available for pickup"));
@@ -232,6 +272,7 @@ class ExecutorTest {
     @Test
     void testReturnBook_notBorrowed() {
         System.out.println("Running testReturnBook_notBorrowed...");
+        // testStorage.registerBook(testBook2); // Jeśli potrzebne
         Book bookNotBorrowed = testStorage.findBookById(testBook2.getId());
         assertNotNull(bookNotBorrowed);
 
