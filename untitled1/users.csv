@@ -1,0 +1,4 @@
+ID;Name;Surname;Email;Role;Password;BookLimit;CardExpiry;CardBlocked
+1;Gateway Reader;Test;gw.reader@example.com;READER;gwpass;3;2026-01-01;false
+2;Raman;Rasikhin;romanrosikhin@gmail.com;READER;admin;5;2026-05-12;false
+3;admin;admin;admin@library.pl;LIBRARIAN;admin;1000;2026-01-01;false
