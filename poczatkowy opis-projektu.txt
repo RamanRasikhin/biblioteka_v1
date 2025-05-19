@@ -1,0 +1,15 @@
+Cel:
+    Celem jest stworzenie systemu do korzystania z biblioteki przez czytelników
+
+Opis:
+    -Działanie programu ma polegać na przechowywaniu listy wszystkich książek należących do biblioteki. Lista ta ma precyzować czy dana książka
+        jest w tej chwili dostępna lub wypożyczona.
+    -Każda książka będzie miała przypisany do siebie gatunek oraz krótki opis w celu przybliżenia jej zawartości czytelnikowi.
+    -Program będzie umożliwiał czytelnikom oraz pracownikom biblioteki wyszukiwanie danej książki w zbiorze po nazwie, autorze i/lub gatunku.
+    -Czytelnik będzie mógł zarezerwować do wypożyczenia dostępną książkę.
+    -System będzie pozwalał czytelnikowi na zgłoszenie chęci do wypożyczenia danej książki co będzie skutkowało powiadomieniem go wiadomością
+        jeśli owa książka będzie ponownie dostępna.
+    -System będzie przypominał czytelnikowi o zbliżającej się dacie zwrotu wypożyczonej przez niego książki.
+    -Czytelnicy będą mieli możliwość założenia konta w sytemie biblioteki który umożliwi mu korzystanie z niego. Do założenia konta wymagane
+        będzie posiadanie ważnej karty bibliotecznej.
+    -System będzie pozwalał pracownikom na określanie limitu ile pojedynczy czytelnik może mieć wypożyczonych na raz książek. 

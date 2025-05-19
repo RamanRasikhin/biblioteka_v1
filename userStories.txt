@@ -1,0 +1,6 @@
+-jako czytelnik chcę wypożyczyc książkę z biblioteki
+-jako czytelnik chcę sprawdzić kiedy mam oddać wypozyczoną książkę
+-jako czytelnik chcę sprawdzić, czy dany tytuł jest dostępny w bibliotece i czy mogę go w tym momencie wypozyczyć
+-jako pracownik chcę założyć konto czytelnikowi
+-jako pracownik chcę zakualizować listę książek dostępnych w bibliotece
+-jako pracwonik chcę określić limit wypozyczonych książek 
