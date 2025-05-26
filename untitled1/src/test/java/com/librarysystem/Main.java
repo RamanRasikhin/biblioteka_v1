@@ -22,7 +22,7 @@ public class Main {
         gateway = new com.librarysystem.Gateway(lookupArray, storage);
         simulatedCurrentDate = com.librarysystem.Date.getCurrentDate();
 
-        System.out.println("Library System Initialized. UML-based structure.");
+        System.out.println("Library System Initialized.");
         System.out.println("Simulated Date: " + simulatedCurrentDate.toString());
 
         if (accessManager.findUserByEmail("admin@library.com") == null && accessManager.getAllUsers().isEmpty()) {

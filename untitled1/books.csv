@@ -3,11 +3,4 @@ ID;Title;Author;Genre;Description;ISBN;Available
 2;The Hobbit;J.R.R. Tolkien;Fantasy;An adventure;100;true
 3;Persist Me;Author P;Genre P;Desc P;ISBN_P1;true
 4;Another One;Author O;Genre O;Desc O;ISBN_P2;false
-5;Availability Test;Author AT;Genre AT;Desc AT;ISBN_AT;true
-6;The Hobbit;J.R.R. Tolkien;Fantasy;An adventure;100;true
-7;Persist Me;Author P;Genre P;Desc P;ISBN_P1;true
-8;Another One;Author O;Genre O;Desc O;ISBN_P2;false
-9;Availability Test;Author AT;Genre AT;Desc AT;ISBN_AT;true
-10;The Hobbit;J.R.R. Tolkien;Fantasy;An adventure;100;false
-11;Persist Me;Author P;Genre P;Desc P;ISBN_P1;true
-12;Another One;Author O;Genre O;Desc O;ISBN_P2;false
+5;1984;George Orwell;Dystopia;nie wazne;ISBN-42;true
